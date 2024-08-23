@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV URL Redirect Checker</title>
+    <style>
+        #loadingMessage {
+            display: none;
+            font-weight: bold;
+            color: blue;
+        }
+        .error {
+            background-color: red;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSV URL Redirect Checker</h1>
+    <input type="file" id="csvFileInput" accept=".csv" />
+    <button id="processButton">Process CSV</button>
+    <p id="loadingMessage">Loading...</p> <!-- Loading message -->
+    <h2>Results:</h2>
+    <table id="resultsTable" border="1">
+        <thead>
+            <tr>
+                <th>Old URL</th>
+                <th>New URL</th>
+                <th>Redirect Correct</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        document.getElementById('processButton').addEventListener('click', async function() {
+            const fileInput = document.getElementById('csvFileInput').files[0];
+            const loadingMessage = document.getElementById('loadingMessage');
+            const tableBody = document.getElementById('resultsTable').querySelector('tbody');
+
+            if (!fileInput) {
+                alert('Please upload a CSV file.');
+                return;
+            }
+
+            // Show loading message and clear previous results
+            loadingMessage.style.display = 'block';
+            tableBody.innerHTML = '';
+
+            const formData = new FormData();
+            formData.append('file', fileInput);
+
+            try {
+                const response = await fetch('http://localhost:3000/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('There was an error processing your request.');
+            } finally {
+                // Hide loading message after fetching the data
+                loadingMessage.style.display = 'none';
+            }
+        });
+
+        function displayResults(results) {
+            const tableBody = document.getElementById('resultsTable').querySelector('tbody');
+            tableBody.innerHTML = '';
+
+            results.forEach(result => {
+                const row = document.createElement('tr');
+
+                const oldUrlCell = document.createElement('td');
+                oldUrlCell.textContent = result.oldUrl;
+                row.appendChild(oldUrlCell);
+
+                const newUrlCell = document.createElement('td');
+                newUrlCell.textContent = result.newUrl;
+                row.appendChild(newUrlCell);
+
+                const redirectCorrectCell = document.createElement('td');
+                redirectCorrectCell.textContent = result.redirectCorrect ? 'Yes' : 'No';
+
+                // Apply the error class if the redirect is not correct
+                if (!result.redirectCorrect) {
+                    redirectCorrectCell.classList.add('error');
+                }
+
+                row.appendChild(redirectCorrectCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
